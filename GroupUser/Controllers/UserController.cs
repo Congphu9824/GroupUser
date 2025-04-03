@@ -8,6 +8,79 @@ namespace GroupUser.Controllers
 {
     public class UserController(IUserService _IUserService, IGroupService _IGroupService, ILogger<GroupController> _logger, ModelDbContext _db) : Controller
     {
+
+        public async Task<IActionResult> EditUser(int id)
+        {
+            var user = _db.Users.Include(u => u.Group).FirstOrDefault(u => u.Id == id);
+            if (user == null) return NotFound();
+
+            ViewBag.UserGroupId = user.GroupId; // Truyền GroupId của User vào ViewBag
+            var groups = _db.Groups.ToList();
+            return View(user);
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> EditUser([FromForm] User user)
+        {
+            try
+            {
+                var updatedUser = await _IUserService.UpdateUser(user);
+                return Json(new
+                {
+                    success = true,
+                    message = "Cập nhật người dùng thành công",
+                    user = new
+                    {
+                        id = updatedUser.Id,
+                        username = updatedUser.Username,
+                        fullName = updatedUser.FullName,
+                        dateOfBirth = updatedUser.DateOfBirth.ToString("yyyy-MM-dd"),
+                        gender = updatedUser.Gender,
+                        phoneNumber = updatedUser.PhoneNumber,
+                        email = updatedUser.Email,
+                        groupId = updatedUser.GroupId
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật người dùng");
+                return Json(new
+                {
+                    success = false,
+                    message = "Đã xảy ra lỗi khi cập nhật người dùng"
+                });
+            }
+        }
+
+
+        public async Task<User> GetById(int id)
+        {
+            return await _db.Users
+                .Include(u => u.Group)
+                .FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+
+        public async Task<IActionResult> Details(int id)
+        {
+            var UserId = await _IUserService.GetById(id);
+            if (UserId == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.group = await _db.Groups
+                .Include(x => x.ChildGroups)
+                .Include(x => x.ParentGroup)
+                .ToListAsync();
+            return View(UserId);
+        }
+
+
+
         [HttpGet]
         public IActionResult GetUsersByParentGroup(int id)
         {
@@ -110,7 +183,6 @@ namespace GroupUser.Controllers
                 var createdUser = await _IUserService.AddUser(user);
                 _logger.LogInformation($"Added new User: {createdUser}");
 
-                // Return the created user data as JSON for immediate updating on the front-end
                 return Json(new
                 {
                     success = true,
@@ -138,81 +210,8 @@ namespace GroupUser.Controllers
         }
 
 
-        public async Task<IActionResult> EditUser(int id)
-        {
-            var user = await _IUserService.GetById(id);
-            if (user == null)
-            {
-                Console.WriteLine("User not found with ID: " + id);
-                return NotFound();
-            }
-
-            Console.WriteLine($"User data: {user.Id}, {user.Username}, {user.FullName}, {user.DateOfBirth}, {user.Gender}, {user.PhoneNumber}, {user.Email}, {user.GroupId}");
-
-            var groups = await _db.Groups.ToListAsync();
-            ViewBag.group = groups;
-            return View(user);
-        }
 
 
-
-        [HttpPost]
-        public async Task<IActionResult> EditUser([FromForm] User user)
-        {
-            try
-            {
-                var updatedUser = await _IUserService.UpdateUser(user);
-                return Json(new
-                {
-                    success = true,
-                    message = "Cập nhật người dùng thành công",
-                    user = new
-                    {
-                        id = updatedUser.Id,
-                        username = updatedUser.Username,
-                        fullName = updatedUser.FullName,
-                        dateOfBirth = updatedUser.DateOfBirth.ToString("yyyy-MM-dd"),
-                        gender = updatedUser.Gender,
-                        phoneNumber = updatedUser.PhoneNumber,
-                        email = updatedUser.Email,
-                        groupId = updatedUser.GroupId
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi cập nhật người dùng");
-                return Json(new
-                {
-                    success = false,
-                    message = "Đã xảy ra lỗi khi cập nhật người dùng"
-                });
-            }
-        }
-
-
-        public async Task<User> GetById(int id)
-        {
-            return await _db.Users
-                .Include(u => u.Group)
-                .FirstOrDefaultAsync(u => u.Id == id);
-        }
-
-
-        public async Task<IActionResult> Details(int id)
-        {
-            var UserId = await _IUserService.GetById(id);
-            if (UserId == null)
-            {
-                return NotFound();
-            }
-
-            ViewBag.group = await _db.Groups
-                .Include(x => x.ChildGroups)
-                .Include(x => x.ParentGroup)
-                .ToListAsync();
-            return View(UserId);
-        }
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)

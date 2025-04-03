@@ -50,7 +50,6 @@ namespace GroupUser.Services
         }
 
 
-
         public async Task<User> GetById(int id)
         {
             var UserId = await _db.Users.Include(x => x.Group).FirstOrDefaultAsync(x => x.Id == id);

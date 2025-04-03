@@ -140,15 +140,15 @@
                     <div class="mb-3">
                         <label for="parentGroupId" class="form-label">Parent Group</label>
                         <select class="form-select" id="parentGroupId" name="GroupId">
-                            <option value="">None</option>
                             @foreach (var item in ViewBag.group)
                             {
                                 <option value="@item.Id">@item.GroupName</option>
                             }
                         </select>
+
                     </div>
 
-                    <div class="modal-footer">
+                    <div class="modal-footer" id="Hileen">
                         <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
                         <button type="submit" id="saveButton" class="btn btn-outline-primary">Save</button>
                     </div>
@@ -189,7 +189,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" id="saveButton" class="btn btn-outline-primary">Save</button>
+                        <button type="submit" id="saveButtonGroup" class="btn btn-outline-primary">Save</button>
                     </div>
                 </form>
             </div>
@@ -209,235 +209,266 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-
     <script>
 
 
-$(document).ready(function() {
-    $('#UserForm').on('submit', function(event) {
-        event.preventDefault();
 
-        // Lấy giá trị của các trường trong form
-        var username = $('#Username').val().trim();
-        var fullName = $('#FullName').val().trim();
-        var dateOfBirth = $('#DateOfBirth').val().trim();
-        var phoneNumber = $('#PhoneNumber').val().trim();
-        var email = $('#Email').val().trim();
-
-        // Biến kiểm tra lỗi
-        var isValid = true;
-        var errorMessage = '';
-
-        // Validate Username: không trống, từ 10-50 ký tự
-        if (username === '' || username.length < 5 || username.length > 50) {
-            isValid = false;
-            errorMessage += 'Username phải từ 5 đến 50 ký tự.\n';
-        }
-
-        // Validate FullName: không trống, từ 5-50 ký tự
-        if (fullName === '' || fullName.length < 5 || fullName.length > 50) {
-            isValid = false;
-            errorMessage += 'FullName phải từ 5 đến 50 ký tự.\n';
-        }
-
-        // Validate DateOfBirth: không trống, không nhỏ hơn 1900 và không lớn hơn ngày hiện tại
-        var birthDate = new Date(dateOfBirth);
-        var currentDate = new Date();
-        if (dateOfBirth === '' || birthDate.getFullYear() < 1900 || birthDate > currentDate) {
-            isValid = false;
-            errorMessage += 'Ngày sinh không hợp lệ.\n';
-        }
-
-        // Validate PhoneNumber: không trống, bắt buộc 10 số và phải bắt đầu với 03 hoặc 09
-        var phoneRegex = /^(03|09)[0-9]{8}$/;
-        if (phoneNumber === '' || !phoneRegex.test(phoneNumber)) {
-            isValid = false;
-            errorMessage += 'Số điện thoại phải bắt đầu bằng 03 hoặc 09 và có đúng 10 chữ số.\n';
-        }
-
- 
-
-        // Nếu có lỗi, hiển thị thông báo lỗi
-        if (!isValid) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi',
-                text: errorMessage
-            });
-            return;
-        }
-
-        // Nếu tất cả đều hợp lệ, tiếp tục với ajax request
-        const mode = $('#userId').val() ? 'EditUser' : 'CreateUser';
-        const actionText = mode === 'EditUser' ? 'sửa' : 'thêm';
-
-        // Hiển thị thông báo xác nhận
-        Swal.fire({
-            title: `Bạn có muốn ${actionText} người dùng này không?`,
-            text: `Thông tin sẽ được lưu sau khi xác nhận.`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: `Có, ${actionText}!`,
-            cancelButtonText: 'Không, hủy bỏ',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var formData = new FormData(this);
-                const url = mode === 'EditUser' ? '/User/EditUser' : '/User/CreateUser';
-                $.ajax({
-                    url: url,
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        if (response.success) {
-                            // Đóng modal và reset form
-                            $('#UserModal').modal('hide');
-                            $('.modal-backdrop').remove();
-                            $('body').removeClass('modal-open');
-
-                            // Format ngày sinh
-                            var dateOfBirth = new Date(response.user.dateOfBirth);
-                            var formattedDate = dateOfBirth.getDate().toString().padStart(2, '0') + '/' +
-                                                (dateOfBirth.getMonth() + 1).toString().padStart(2, '0') + '/' +
-                                                dateOfBirth.getFullYear();
-
-                            if (mode === 'CreateUser') {
-                                // Thêm mới: Thêm dòng mới vào bảng
-                                var rowCount = $('#userTableBody tr').length;
-                                var newIndex = rowCount + 1;
-
-                                var newRow = `
-                                    <tr data-id="${response.user.id}">
-                                        <td>${newIndex}</td>
-                                        <td>${response.user.username}</td>
-                                        <td>${response.user.fullName}</td>
-                                        <td>${formattedDate}</td>
-                                        <td>${response.user.gender ? 'Nam' : 'Nữ'}</td>
-                                        <td>${response.user.phoneNumber}</td>
-                                        <td>${response.user.email}</td>
-                                        <td>${response.user.groupId}</td>
-                                        <td>
-                                            <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Detail</button>
-                                            <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Edit</button>
-                                            <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${response.user.id}')">Delete</button>
-                                        </td>
-                                    </tr>
-                                `;
-
-                                if ($('#userTableBody tr td').text().trim() === 'Không có người dùng nào') {
-                                    $('#userTableBody').html(newRow);
-                                } else {
-                                    $('#userTableBody').append(newRow);
-                                }
-                            } else {
-                                // Sửa: Cập nhật dòng hiện có
-                                const row = $(`#userTableBody tr[data-id="${response.user.id}"]`);
-                                row.find('td:eq(1)').text(response.user.username);
-                                row.find('td:eq(2)').text(response.user.fullName);
-                                row.find('td:eq(3)').text(formattedDate);
-                                row.find('td:eq(4)').text(response.user.gender ? 'Nam' : 'Nữ');
-                                row.find('td:eq(5)').text(response.user.phoneNumber);
-                                row.find('td:eq(6)').text(response.user.email);
-                                row.find('td:eq(7)').text(response.user.groupId);
-
-                                // Cập nhật lại các nút action
-                                row.find('td:eq(8)').html(`
-                                    <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Detail</button>
-                                    <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Edit</button>
-                                    <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${response.user.id}')">Delete</button>
-                                `);
-                            }
-
-                            // Hiển thị thông báo thành công
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Thành công',
-                                text: response.message,
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi',
-                                text: response.message
-                            });
-                        }
-                    },
-                    error: function() {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Lỗi',
-                            text: `Đã xảy ra lỗi khi ${actionText} người dùng`
-                        });
-                    }
-                });
-            }
-        });
-    });
-});
-
-
-
-        // Hàm mở modal với các chế độ khác nhau
+    // Hàm mở modal với các chế độ khác nhau
         function openUserModal(mode, id, username, fullName, dateOfBirth, gender, phoneNumber, email, groupId) {
-            // Set modal title
-            const modalTitle = mode === 'EditUser' ? 'Sửa User' :
-                              mode === 'CreateUser' ? 'Thêm User mới' : 'Chi tiết User';
-            document.getElementById('UserModalLabel').textContent = modalTitle;
+            // Reset toàn bộ form và trạng thái controls
+            $('#UserForm')[0].reset();
+            $('#UserForm input, #UserForm select').prop('disabled', false); // Luôn enable tất cả trước khi set lại
 
-            // Reset form khi thêm mới
+            // Set tiêu đề modal
+            $('#UserModalLabel').text(
+                mode === 'EditUser' ? 'Sửa User' :
+                mode === 'CreateUser' ? 'Thêm User mới' : 'Chi tiết User'
+            );
+
+            // Xử lý riêng cho chế độ Create
             if (mode === 'CreateUser') {
-                $('#UserForm')[0].reset();
                 $('#userId').val('');
+                $('#saveButton').show();
                 return $('#UserModal').modal('show');
             }
 
-            // Set form input values
-            document.getElementById('userId').value = id;
-            document.getElementById('Username').value = username;
-            document.getElementById('FullName').value = fullName;
+            // Điền giá trị vào form
+            $('#userId').val(id);
+            $('#Username').val(username);
+            $('#FullName').val(fullName);
 
-            // Format date properly (YYYY-MM-DD)
-            let formattedDate = "";
+            // Xử lý ngày sinh
             if (dateOfBirth) {
-                let dateObj = new Date(dateOfBirth);
+                const dateObj = new Date(dateOfBirth);
                 if (!isNaN(dateObj.getTime())) {
-                    formattedDate = dateObj.toLocaleDateString('en-CA');
-                }
-            }
-            document.getElementById('DateOfBirth').value = formattedDate;
-
-            document.getElementById('Gender').value = gender ? 'true' : 'false';
-            document.getElementById('PhoneNumber').value = phoneNumber;
-            document.getElementById('Email').value = email;
-
-            // Set GroupId
-            const groupSelect = document.getElementById('parentGroupId');
-            for (let option of groupSelect.options) {
-                if (option.value == groupId) {
-                    option.selected = true;
-                    break;
+                    $('#DateOfBirth').val(dateObj.toISOString().split('T')[0]);
                 }
             }
 
-            // Toggle save button và readonly
-            const saveButton = document.getElementById('saveButton');
-            const inputs = document.querySelectorAll('#UserForm input, #UserForm select');
+            $('#Gender').val(gender ? 'true' : 'false');
+            $('#PhoneNumber').val(phoneNumber);
+            $('#Email').val(email);
+            $('#parentGroupId').val(groupId?.toString() || '');
 
-            if (mode === 'DetailUser') {
-                saveButton.style.display = 'none';
-                inputs.forEach(input => input.disabled = true);
-            } else {
-                saveButton.style.display = 'inline-block';
-                inputs.forEach(input => input.disabled = false);
-            }
+            // Xử lý trạng thái form theo mode
+            // Xử lý trạng thái form theo mode
+        if (mode === 'DetailUser') {
+            $('#saveButton').hide(); // Chắc chắn ẩn nút Save
+            $('#UserForm input, #UserForm select').prop('disabled', true); // Disable tất cả input
+        } else {
+            $('#saveButton').show(); // Hiển thị nút Save cho các mode khác
+            $('#UserForm input, #UserForm select').prop('disabled', false); // Enable tất cả input
+        }
 
-            // Show the modal
             $('#UserModal').modal('show');
         }
+
+
+     // Hàm cập nhật bảng user
+        function updateUserTable(users) {
+            var tbody = $('table tbody');
+            tbody.empty();
+
+            // if (users.length === 0) {
+            //     tbody.append('<tr><td colspan="9" class="text-center">Không có người dùng nào</td></tr>');
+            //     return;
+            // }
+
+            users.forEach(function(user, index) {
+                var dateOfBirth = new Date(user.dateOfBirth);
+                var formattedDate = dateOfBirth.getDate().toString().padStart(2, '0') + '/' +
+                                   (dateOfBirth.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                                   dateOfBirth.getFullYear();
+                var row = `
+                    <tr data-id="${user.id}">
+                        <td>${index + 1}</td>
+                        <td>${user.username}</td>
+                        <td>${user.fullName}</td>
+                        <td>${formattedDate}</td>
+                        <td>${user.gender ? 'Nam' : 'Nữ'}</td>
+                        <td>${user.phoneNumber}</td>
+                        <td>${user.email}</td>
+                        <td>${user.groupName ? user.groupName : user.groupId}</td>
+                        <td>
+                            <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${user.id}', '${user.username}', '${user.fullName}', '${user.dateOfBirth}', '${user.gender}', '${user.phoneNumber}', '${user.email}', '${user.groupId}')">Detail</button>
+                            <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${user.id}', '${user.username}', '${user.fullName}', '${user.dateOfBirth}', '${user.gender}', '${user.phoneNumber}', '${user.email}', '${user.groupId}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${user.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+
+
+
+        //
+        $(document).ready(function() {
+            $('#UserForm').on('submit', function(event) {
+                event.preventDefault();
+
+                // Lấy giá trị của các trường trong form
+                var username = $('#Username').val().trim();
+                var fullName = $('#FullName').val().trim();
+                var dateOfBirth = $('#DateOfBirth').val().trim();
+                var phoneNumber = $('#PhoneNumber').val().trim();
+                var email = $('#Email').val().trim();
+
+                // Biến kiểm tra lỗi
+                var isValid = true;
+                var errorMessage = '';
+
+                // Validate Username: không trống, từ 10-50 ký tự
+                if (username === '' || username.length < 5 || username.length > 50) {
+                    isValid = false;
+                    errorMessage += 'Username phải từ 5 đến 50 ký tự.\n';
+                }
+
+                // Validate FullName: không trống, từ 5-50 ký tự
+                if (fullName === '' || fullName.length < 5 || fullName.length > 50) {
+                    isValid = false;
+                    errorMessage += 'FullName phải từ 5 đến 50 ký tự.\n';
+                }
+
+                // Validate DateOfBirth: không trống, không nhỏ hơn 1900 và không lớn hơn ngày hiện tại
+                var birthDate = new Date(dateOfBirth);
+                var currentDate = new Date();
+                if (dateOfBirth === '' || birthDate.getFullYear() < 1900 || birthDate > currentDate) {
+                    isValid = false;
+                    errorMessage += 'Ngày sinh không hợp lệ.\n';
+                }
+
+                // Validate PhoneNumber: không trống, bắt buộc 10 số và phải bắt đầu với 03 hoặc 09
+                var phoneRegex = /^(03|09)[0-9]{8}$/;
+                if (phoneNumber === '' || !phoneRegex.test(phoneNumber)) {
+                    isValid = false;
+                    errorMessage += 'Số điện thoại phải bắt đầu bằng 03 hoặc 09 và có đúng 10 chữ số.\n';
+                }
+
+
+
+                // Nếu có lỗi, hiển thị thông báo lỗi
+                if (!isValid) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: errorMessage
+                    });
+                    return;
+                }
+
+                // Nếu tất cả đều hợp lệ, tiếp tục với ajax request
+                const mode = $('#userId').val() ? 'EditUser' : 'CreateUser';
+                const actionText = mode === 'EditUser' ? 'sửa' : 'thêm';
+
+                // Hiển thị thông báo xác nhận
+                Swal.fire({
+                    title: `Bạn có muốn ${actionText} người dùng này không?`,
+                    text: `Thông tin sẽ được lưu sau khi xác nhận.`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: `Có, ${actionText}!`,
+                    cancelButtonText: 'Không, hủy bỏ',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var formData = new FormData(this);
+                        const url = mode === 'EditUser' ? '/User/EditUser' : '/User/CreateUser';
+                        $.ajax({
+                            url: url,
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                if (response.success) {
+                                    // Đóng modal và reset form
+                                    $('#UserModal').modal('hide');
+                                    $('.modal-backdrop').remove();
+                                    $('body').removeClass('modal-open');
+
+                                    // Format ngày sinh
+                                    var dateOfBirth = new Date(response.user.dateOfBirth);
+                                    var formattedDate = dateOfBirth.getDate().toString().padStart(2, '0') + '/' +
+                                                        (dateOfBirth.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                                                        dateOfBirth.getFullYear();
+
+                                    if (mode === 'CreateUser') {
+                                        // Thêm mới: Thêm dòng mới vào bảng
+                                        var rowCount = $('#userTableBody tr').length;
+                                        var newIndex = rowCount + 1;
+
+                                        var newRow = `
+                                            <tr data-id="${response.user.id}">
+                                                <td>${newIndex}</td>
+                                                <td>${response.user.username}</td>
+                                                <td>${response.user.fullName}</td>
+                                                <td>${formattedDate}</td>
+                                                <td>${response.user.gender ? 'Nam' : 'Nữ'}</td>
+                                                <td>${response.user.phoneNumber}</td>
+                                                <td>${response.user.email}</td>
+                                                <td>${response.user.groupId}</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Detail</button>
+                                                    <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Edit</button>
+                                                    <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${response.user.id}')">Delete</button>
+                                                </td>
+                                            </tr>
+                                        `;
+
+                                        if ($('#userTableBody tr td').text().trim() === 'Không có người dùng nào') {
+                                            $('#userTableBody').html(newRow);
+                                        } else {
+                                            $('#userTableBody').append(newRow);
+                                        }
+                                    } else {
+                                        // Sửa: Cập nhật dòng hiện có
+                                        const row = $(`#userTableBody tr[data-id="${response.user.id}"]`);
+                                        row.find('td:eq(1)').text(response.user.username);
+                                        row.find('td:eq(2)').text(response.user.fullName);
+                                        row.find('td:eq(3)').text(formattedDate);
+                                        row.find('td:eq(4)').text(response.user.gender ? 'Nam' : 'Nữ');
+                                        row.find('td:eq(5)').text(response.user.phoneNumber);
+                                        row.find('td:eq(6)').text(response.user.email);
+                                        row.find('td:eq(7)').text(response.user.groupId);
+
+                                        // Cập nhật lại các nút action
+                                        row.find('td:eq(8)').html(`
+                                            <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Detail</button>
+                                            <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Edit</button>
+                                            <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${response.user.id}')">Delete</button>
+                                        `);
+                                    }
+
+                                    // Hiển thị thông báo thành công
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Thành công',
+                                        text: response.message,
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Lỗi',
+                                        text: response.message
+                                    });
+                                }
+                            },
+                            error: function() {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Lỗi',
+                                    text: `Đã xảy ra lỗi khi ${actionText} người dùng`
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
 
 
 
@@ -572,7 +603,7 @@ $(document).ready(function() {
             function openModal(mode, id = '', code = '', name = '', parentId = '') {
                 const modalTitle = document.getElementById("groupModalLabel");
                 const groupForm = document.getElementById("groupForm");
-                const saveButton = document.getElementById("saveButton");
+                                const saveButtonGroup = document.getElementById("saveButtonGroup");
                 const inputs = document.querySelectorAll('#groupForm input, #groupForm select, #groupForm button');
 
                 // Đặt giá trị cho các trường
@@ -592,7 +623,7 @@ $(document).ready(function() {
                         input.disabled = false;
                         input.classList.remove('bg-light');
                     });
-                    saveButton.style.display = "block";
+                            saveButtonGroup.style.display = "block";
                 } else if (mode === 'edit') {
                     modalTitle.innerText = "Edit Group";
                     formAction = "/Group/EditGroup/" + id;
@@ -601,21 +632,21 @@ $(document).ready(function() {
                         input.disabled = false;
                         input.classList.remove('bg-light');
                     });
-                    saveButton.style.display = "block";
+                            saveButtonGroup.style.display = "block";
                 } else if (mode === 'detail') {
                     modalTitle.innerText = "Group Details";
                     inputs.forEach(input => {
                         input.disabled = true;
                         input.classList.add('bg-light');
                     });
-                    saveButton.style.display = "none";
+                            saveButtonGroup.style.display = "none";
                     $('#groupModal').modal('show');
                     return;
                 }
 
                 groupForm.action = formAction;
-                saveButton.onclick = null;
-                saveButton.addEventListener('click', function (event) {
+                        saveButtonGroup.onclick = null;
+                        saveButtonGroup.addEventListener('click', function (event) {
                     showConfirmation(event, "groupForm", title);
                 });
 
@@ -681,41 +712,7 @@ $(document).ready(function() {
                 });
             }
 
-            // Hàm cập nhật bảng user
-        function updateUserTable(users) {
-            var tbody = $('table tbody');
-            tbody.empty();
-
-            if (users.length === 0) {
-                tbody.append('<tr><td colspan="9" class="text-center">Không có người dùng nào</td></tr>');
-                return;
-            }
-
-            users.forEach(function(user, index) {
-                var dateOfBirth = new Date(user.dateOfBirth);
-                var formattedDate = dateOfBirth.getDate().toString().padStart(2, '0') + '/' +
-                                   (dateOfBirth.getMonth() + 1).toString().padStart(2, '0') + '/' +
-                                   dateOfBirth.getFullYear();
-                var row = `
-                    <tr data-id="${user.id}">
-                        <td>${index + 1}</td>
-                        <td>${user.username}</td>
-                        <td>${user.fullName}</td>
-                        <td>${formattedDate}</td>
-                        <td>${user.gender ? 'Nam' : 'Nữ'}</td>
-                        <td>${user.phoneNumber}</td>
-                        <td>${user.email}</td>
-                        <td>${user.groupName || user.groupId}</td>
-                        <td>
-                            <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${user.id}', '${user.username}', '${user.fullName}', '${user.dateOfBirth}', '${user.gender}', '${user.phoneNumber}', '${user.email}', '${user.groupId}')">Detail</button>
-                            <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${user.id}', '${user.username}', '${user.fullName}', '${user.dateOfBirth}', '${user.gender}', '${user.phoneNumber}', '${user.email}', '${user.groupId}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${user.id}')">Delete</button>
-                        </td>
-                    </tr>
-                `;
-                tbody.append(row);
-            });
-        }
+    
             });
 
 
@@ -775,7 +772,43 @@ $(document).ready(function() {
 
 
 <style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
+    thead {
+        background-color: #f8f9fa;
+    }
+
+    #userTableBody {
+        display: block;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    thead, tbody {
+        display: block;
+    }
+
+    tbody {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    th, td {
+        width: 150px; /* Adjust the width based on your needs */
+        text-align: left;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+
+    th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 1;
+    }
     .jstree-clicked {
         background-color: #f0ad4e !important;
         color: white !important;
@@ -819,7 +852,7 @@ $(document).ready(function() {
         color: #212529;
         background-color: #ffc107;
         border-color: #ffc107;
-    }
+    }   
 
     .btn-danger {
         color: #fff;
@@ -829,7 +862,7 @@ $(document).ready(function() {
     /* CSS cho context menu - Phiên bản đẹp và gọn gàng */
     .vakata-context {
         min-width: 180px;
-        margin-top: -123px;
+        margin-top: -203px;
         background: #fff;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
@@ -837,7 +870,7 @@ $(document).ready(function() {
         padding: 6px 0;
         z-index: 10000;
         width: 10px;
-        margin-left: 30px;
+        margin-left: 60px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 

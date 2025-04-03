@@ -9,6 +9,19 @@ namespace GroupUser.Controllers
 
     public class GroupController(IGroupService _IGroupService, ILogger<GroupController> _logger, ModelDbContext _db) : Controller
     {
+        public async Task<IActionResult> Index()
+        {
+            var groups = await _IGroupService.GetAll();
+
+            ViewBag.group = await _IGroupService.GetAll();
+
+            // Build a tree structure from the list of groups
+            var groupTree = BuildGroupTree(groups);
+
+            return View(groupTree);
+        }
+
+
 
         [HttpGet]
         public IActionResult GetUsersByGroup(int id)
@@ -53,18 +66,6 @@ namespace GroupUser.Controllers
 
 
 
-
-        public async Task<IActionResult> Index()
-        {
-            var groups = await _IGroupService.GetAll();
-
-            ViewBag.group = await _IGroupService.GetAll();
-
-            // Build a tree structure from the list of groups
-            var groupTree = BuildGroupTree(groups);
-
-            return View(groupTree);
-        }
 
         private List<Group> BuildGroupTree(List<Group> groups)
         {
