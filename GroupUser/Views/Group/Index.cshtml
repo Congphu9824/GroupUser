@@ -1,0 +1,915 @@
+﻿@model List<Data.Entities.Group>
+
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-2" style="border-right: 1px solid black;">
+            <!-- Button trigger modal -->
+            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal"
+            data-bs-target="#groupModal" onclick="resetForm(); openModal('CreateGroup')">
+                Create New
+            </button>
+            <!-- Modal Group -->
+            <div class="modal fade" id="groupModal" tabindex="-1" aria-labelledby="groupModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="groupModalLabel">Create New Group</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="groupForm" asp-action="CreateGroup" method="post">
+                                <input type="hidden" id="groupId" name="Id">
+                                <div class="mb-3">
+                                    <label class="form-label">Code Group</label>
+                                    <input type="text" class="form-control" id="GroupCode" value="CD12345" name="GroupCode" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Name Group</label>
+                                    <input type="text" class="form-control" id="groupName" name="GroupName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="parentGroupId" class="form-label">Parent Group</label>
+                                    <select class="form-select" id="parentGroupId" name="ParentGroupId">
+                                        <option value="">None</option>
+                                        @foreach (var item in Model)
+                                        {
+                                            <option value="@item.Id">@item.GroupName</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+                                    <button type="submit" id="saveButton" class="btn btn-outline-primary">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div id="groupTree"></div>
+        </div>
+        <div class="col-10">
+            <h2 style="text-align: center; color: #e2a121;">
+                Information User
+            </h2>
+            <button type="button" class="btn btn-outline-success float-end" data-bs-toggle="modal" style="margin-top: -40px;"
+                    data-bs-target="#UserModal" onclick="openUserModal('CreateUser')">
+                Create User
+            </button>
+            <hr>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Username</th>
+                            <th>Full Name</th>
+                            <th>Date of Birth</th>
+                            <th>Gender</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Group</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody" >
+                        <!-- Dữ liệu sẽ được load bằng JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal User -->
+<div class="modal fade" id="UserModal" tabindex="-1" aria-labelledby="UserModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 45%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="UserModalLabel">Create New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="UserForm" method="post">
+                    <input type="hidden" id="userId" name="Id">
+
+                    <div class="mb-3 row">
+                        <div class="col-md-6">
+                            <label class="form-label" for="Username">Username</label>
+                            <input type="text" class="form-control" id="Username" name="Username" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="FullName">Full Name</label>
+                            <input type="text" class="form-control" id="FullName" name="FullName" required>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <div class="col-md-6">
+                            <label for="DateOfBirth" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="DateOfBirth" name="DateOfBirth">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="Gender">Gender</label>
+                            <select class="form-select" id="Gender" name="Gender" required>
+                                <option value="true">Male</option>
+                                <option value="false">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <div class="col-md-6">
+                            <label class="form-label" for="PhoneNumber">Phone Number</label>
+                            <input type="text" class="form-control" id="PhoneNumber" name="PhoneNumber" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="Email">Email</label>
+                            <input type="email" class="form-control" id="Email" name="Email" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="parentGroupId" class="form-label">Parent Group</label>
+                        <select class="form-select" id="parentGroupId" name="GroupId">
+                            <option value="">None</option>
+                            @foreach (var item in ViewBag.group)
+                            {
+                                <option value="@item.Id">@item.GroupName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" id="saveButton" class="btn btn-outline-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Group -->
+<div class="modal fade" id="groupModal" tabindex="-1" aria-labelledby="groupModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="groupModalLabel">Create New Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="groupForm" asp-action="CreateGroup" method="post">
+                    <input type="hidden" id="groupId" name="Id">
+                    <div class="mb-3">
+                        <label class="form-label">Code Group</label>
+                        <input type="text" class="form-control" id="GroupCode" value="CD12345" name="GroupCode" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Name Group</label>
+                        <input type="text" class="form-control" id="groupName" name="GroupName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="parentGroupId" class="form-label">Parent Group</label>
+                        <select class="form-select" id="parentGroupId" name="ParentGroupId">
+                            <option value="">None</option>
+                            @foreach (var item in Model)
+                            {
+                                <option value="@item.Id">@item.GroupName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" id="saveButton" class="btn btn-outline-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts {
+    <!-- Thư viện jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- Thư viện jsTree -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
+    <!-- FontAwesome để hiển thị icon thư mục -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+    <script>
+
+
+$(document).ready(function() {
+    $('#UserForm').on('submit', function(event) {
+        event.preventDefault();
+
+        // Lấy giá trị của các trường trong form
+        var username = $('#Username').val().trim();
+        var fullName = $('#FullName').val().trim();
+        var dateOfBirth = $('#DateOfBirth').val().trim();
+        var phoneNumber = $('#PhoneNumber').val().trim();
+        var email = $('#Email').val().trim();
+
+        // Biến kiểm tra lỗi
+        var isValid = true;
+        var errorMessage = '';
+
+        // Validate Username: không trống, từ 10-50 ký tự
+        if (username === '' || username.length < 5 || username.length > 50) {
+            isValid = false;
+            errorMessage += 'Username phải từ 5 đến 50 ký tự.\n';
+        }
+
+        // Validate FullName: không trống, từ 5-50 ký tự
+        if (fullName === '' || fullName.length < 5 || fullName.length > 50) {
+            isValid = false;
+            errorMessage += 'FullName phải từ 5 đến 50 ký tự.\n';
+        }
+
+        // Validate DateOfBirth: không trống, không nhỏ hơn 1900 và không lớn hơn ngày hiện tại
+        var birthDate = new Date(dateOfBirth);
+        var currentDate = new Date();
+        if (dateOfBirth === '' || birthDate.getFullYear() < 1900 || birthDate > currentDate) {
+            isValid = false;
+            errorMessage += 'Ngày sinh không hợp lệ.\n';
+        }
+
+        // Validate PhoneNumber: không trống, bắt buộc 10 số và phải bắt đầu với 03 hoặc 09
+        var phoneRegex = /^(03|09)[0-9]{8}$/;
+        if (phoneNumber === '' || !phoneRegex.test(phoneNumber)) {
+            isValid = false;
+            errorMessage += 'Số điện thoại phải bắt đầu bằng 03 hoặc 09 và có đúng 10 chữ số.\n';
+        }
+
+ 
+
+        // Nếu có lỗi, hiển thị thông báo lỗi
+        if (!isValid) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: errorMessage
+            });
+            return;
+        }
+
+        // Nếu tất cả đều hợp lệ, tiếp tục với ajax request
+        const mode = $('#userId').val() ? 'EditUser' : 'CreateUser';
+        const actionText = mode === 'EditUser' ? 'sửa' : 'thêm';
+
+        // Hiển thị thông báo xác nhận
+        Swal.fire({
+            title: `Bạn có muốn ${actionText} người dùng này không?`,
+            text: `Thông tin sẽ được lưu sau khi xác nhận.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: `Có, ${actionText}!`,
+            cancelButtonText: 'Không, hủy bỏ',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var formData = new FormData(this);
+                const url = mode === 'EditUser' ? '/User/EditUser' : '/User/CreateUser';
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            // Đóng modal và reset form
+                            $('#UserModal').modal('hide');
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open');
+
+                            // Format ngày sinh
+                            var dateOfBirth = new Date(response.user.dateOfBirth);
+                            var formattedDate = dateOfBirth.getDate().toString().padStart(2, '0') + '/' +
+                                                (dateOfBirth.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                                                dateOfBirth.getFullYear();
+
+                            if (mode === 'CreateUser') {
+                                // Thêm mới: Thêm dòng mới vào bảng
+                                var rowCount = $('#userTableBody tr').length;
+                                var newIndex = rowCount + 1;
+
+                                var newRow = `
+                                    <tr data-id="${response.user.id}">
+                                        <td>${newIndex}</td>
+                                        <td>${response.user.username}</td>
+                                        <td>${response.user.fullName}</td>
+                                        <td>${formattedDate}</td>
+                                        <td>${response.user.gender ? 'Nam' : 'Nữ'}</td>
+                                        <td>${response.user.phoneNumber}</td>
+                                        <td>${response.user.email}</td>
+                                        <td>${response.user.groupId}</td>
+                                        <td>
+                                            <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Detail</button>
+                                            <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Edit</button>
+                                            <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${response.user.id}')">Delete</button>
+                                        </td>
+                                    </tr>
+                                `;
+
+                                if ($('#userTableBody tr td').text().trim() === 'Không có người dùng nào') {
+                                    $('#userTableBody').html(newRow);
+                                } else {
+                                    $('#userTableBody').append(newRow);
+                                }
+                            } else {
+                                // Sửa: Cập nhật dòng hiện có
+                                const row = $(`#userTableBody tr[data-id="${response.user.id}"]`);
+                                row.find('td:eq(1)').text(response.user.username);
+                                row.find('td:eq(2)').text(response.user.fullName);
+                                row.find('td:eq(3)').text(formattedDate);
+                                row.find('td:eq(4)').text(response.user.gender ? 'Nam' : 'Nữ');
+                                row.find('td:eq(5)').text(response.user.phoneNumber);
+                                row.find('td:eq(6)').text(response.user.email);
+                                row.find('td:eq(7)').text(response.user.groupId);
+
+                                // Cập nhật lại các nút action
+                                row.find('td:eq(8)').html(`
+                                    <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Detail</button>
+                                    <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${response.user.id}', '${response.user.username}', '${response.user.fullName}', '${response.user.dateOfBirth}', '${response.user.gender}', '${response.user.phoneNumber}', '${response.user.email}', '${response.user.groupId}')">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${response.user.id}')">Delete</button>
+                                `);
+                            }
+
+                            // Hiển thị thông báo thành công
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: response.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: response.message
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: `Đã xảy ra lỗi khi ${actionText} người dùng`
+                        });
+                    }
+                });
+            }
+        });
+    });
+});
+
+
+
+        // Hàm mở modal với các chế độ khác nhau
+        function openUserModal(mode, id, username, fullName, dateOfBirth, gender, phoneNumber, email, groupId) {
+            // Set modal title
+            const modalTitle = mode === 'EditUser' ? 'Sửa User' :
+                              mode === 'CreateUser' ? 'Thêm User mới' : 'Chi tiết User';
+            document.getElementById('UserModalLabel').textContent = modalTitle;
+
+            // Reset form khi thêm mới
+            if (mode === 'CreateUser') {
+                $('#UserForm')[0].reset();
+                $('#userId').val('');
+                return $('#UserModal').modal('show');
+            }
+
+            // Set form input values
+            document.getElementById('userId').value = id;
+            document.getElementById('Username').value = username;
+            document.getElementById('FullName').value = fullName;
+
+            // Format date properly (YYYY-MM-DD)
+            let formattedDate = "";
+            if (dateOfBirth) {
+                let dateObj = new Date(dateOfBirth);
+                if (!isNaN(dateObj.getTime())) {
+                    formattedDate = dateObj.toLocaleDateString('en-CA');
+                }
+            }
+            document.getElementById('DateOfBirth').value = formattedDate;
+
+            document.getElementById('Gender').value = gender ? 'true' : 'false';
+            document.getElementById('PhoneNumber').value = phoneNumber;
+            document.getElementById('Email').value = email;
+
+            // Set GroupId
+            const groupSelect = document.getElementById('parentGroupId');
+            for (let option of groupSelect.options) {
+                if (option.value == groupId) {
+                    option.selected = true;
+                    break;
+                }
+            }
+
+            // Toggle save button và readonly
+            const saveButton = document.getElementById('saveButton');
+            const inputs = document.querySelectorAll('#UserForm input, #UserForm select');
+
+            if (mode === 'DetailUser') {
+                saveButton.style.display = 'none';
+                inputs.forEach(input => input.disabled = true);
+            } else {
+                saveButton.style.display = 'inline-block';
+                inputs.forEach(input => input.disabled = false);
+            }
+
+            // Show the modal
+            $('#UserModal').modal('show');
+        }
+
+
+
+
+        //
+        $(document).ready(function () {
+            // Khởi tạo cây thư mục
+            $.ajax({
+                url: '@Url.Action("GetGroupTree")',
+                type: 'GET',
+                success: function (data) {
+                    var treeData = data.map(function (group) {
+                        return {
+                            id: group.id,
+                            parent: group.parent === null ? "#" : group.parent,
+                            text: group.text,
+                            icon: "fa fa-folder",
+                            state: {
+                                opened: false
+                            }
+                        };
+                    });
+
+                    $('#groupTree').jstree({
+                        core: {
+                            data: treeData,
+                            themes: {
+                                dots: false,
+                                stripes: false
+                            }
+                        },
+                        plugins: ["types", "contextmenu", "changed"],
+                        types: {
+                            default: {
+                                icon: "fa fa-folder",
+                                li_attr: {
+                                    style: "color: #deae36; list-style-type: none;"
+                                },
+                                a_attr: {
+                                    style: "color: #deae36; text-decoration: none; padding-left: 5px;"
+                                }
+                            }
+                        },
+                        contextmenu: {
+                            items: function ($node) {
+                                return {
+                                    edit: {
+                                        label: "Sửa",
+                                        icon: "fa fa-edit",
+                                        _class: "edit-action",
+                                        action: function (data) {
+                                            var inst = $.jstree.reference(data.reference);
+                                            var obj = inst.get_node(data.reference);
+                                            var groupId = obj.id;
+                                            var groupName = obj.text;
+                                            var parentId = obj.parent !== '#' ? obj.parent : '';
+                                            var groupCode = obj.original && obj.original.data ? obj.original.data.code : 'CD12345';
+
+                                            openModal('edit', groupId, groupCode, groupName, parentId);
+                                            $('#groupModal').modal('show');
+                                        }
+                                    },
+                                    detail: {
+                                        label: "Chi tiết",
+                                        icon: "fa fa-info-circle",
+                                        _class: "detail-action",
+                                        action: function (data) {
+                                            var inst = $.jstree.reference(data.reference);
+                                            var obj = inst.get_node(data.reference);
+                                            var groupId = obj.id;
+                                            var groupName = obj.text;
+                                            var parentId = obj.parent !== '#' ? obj.parent : '';
+                                            var groupCode = obj.original && obj.original.data ? obj.original.data.code : 'CD12345';
+
+                                            openModal('detail', groupId, groupCode, groupName, parentId);
+                                            $('#groupModal').modal('show');
+                                        }
+                                    },
+                                    delete: {
+                                        label: "Xóa",
+                                        icon: "fa fa-trash",
+                                        _class: "delete-action",
+                                        action: function (data) {
+                                            var inst = $.jstree.reference(data.reference);
+                                            var obj = inst.get_node(data.reference);
+                                            var groupId = obj.id;
+
+                                            confirmDelete(null, groupId);
+                                        }
+                                    }
+                                };
+                            }
+                        }
+                    }).on("select_node.jstree", function (e, data) {
+                        var groupId = data.node.id;
+                        loadUsersByGroup(groupId);
+                    }).on("loaded.jstree", function() {
+                        // Chọn nhóm mặc định khi cây được tải xong
+                        var defaultGroupId = $('#groupTree').jstree("get_node", "#").id; // Chọn nhóm gốc hoặc nhóm đầu tiên
+                        loadUsersByGroup(defaultGroupId); // Gọi hàm tải người dùng cho nhóm này
+                    });
+                }
+            });
+
+            // Hàm hiển thị xác nhận
+            function showConfirmation(event, formId, title) {
+                if (event) event.preventDefault();
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: title,
+                    showCancelButton: true,
+                    confirmButtonText: 'Vâng!',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#f59e0b',
+                    cancelButtonColor: '#ef4444',
+                    customClass: {
+                        popup: 'swal2-border-radius'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (typeof formId === 'string') {
+                            document.getElementById(formId).submit();
+                        } else if (typeof formId === 'object') {
+                            formId.submit();
+                        }
+                    }
+                });
+            }
+
+            // Hàm mở modal
+            function openModal(mode, id = '', code = '', name = '', parentId = '') {
+                const modalTitle = document.getElementById("groupModalLabel");
+                const groupForm = document.getElementById("groupForm");
+                const saveButton = document.getElementById("saveButton");
+                const inputs = document.querySelectorAll('#groupForm input, #groupForm select, #groupForm button');
+
+                // Đặt giá trị cho các trường
+                document.getElementById("groupId").value = id;
+                document.getElementById("GroupCode").value = code;
+                document.getElementById("groupName").value = name;
+                document.getElementById("parentGroupId").value = parentId;
+
+                let formAction = "";
+                let title = "";
+
+                if (mode === 'CreateGroup') {
+                    modalTitle.innerText = "Create New Group";
+                    formAction = "/Group/CreateGroup";
+                    title = "Bạn có muốn thêm nhóm không?";
+                    inputs.forEach(input => {
+                        input.disabled = false;
+                        input.classList.remove('bg-light');
+                    });
+                    saveButton.style.display = "block";
+                } else if (mode === 'edit') {
+                    modalTitle.innerText = "Edit Group";
+                    formAction = "/Group/EditGroup/" + id;
+                    title = "Bạn có muốn cập nhật nhóm không?";
+                    inputs.forEach(input => {
+                        input.disabled = false;
+                        input.classList.remove('bg-light');
+                    });
+                    saveButton.style.display = "block";
+                } else if (mode === 'detail') {
+                    modalTitle.innerText = "Group Details";
+                    inputs.forEach(input => {
+                        input.disabled = true;
+                        input.classList.add('bg-light');
+                    });
+                    saveButton.style.display = "none";
+                    $('#groupModal').modal('show');
+                    return;
+                }
+
+                groupForm.action = formAction;
+                saveButton.onclick = null;
+                saveButton.addEventListener('click', function (event) {
+                    showConfirmation(event, "groupForm", title);
+                });
+
+                $('#groupModal').modal('show');
+            }
+
+            // Hàm xác nhận xóa
+            function confirmDelete(event, id) {
+                var form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/Group/DeleteGroup/' + id;
+                form.id = 'deleteForm-' + id;
+
+                var token = document.createElement('input');
+                token.type = 'hidden';
+                token.name = '__RequestVerificationToken';
+                token.value = $('input[name="__RequestVerificationToken"]').val();
+                form.appendChild(token);
+
+                document.body.appendChild(form);
+
+                showConfirmation(event, form, "Bạn có chắc chắn muốn xóa nhóm này?");
+            }
+
+            // Hàm load user theo group
+            function loadUsersByGroup(groupId) {
+                $.ajax({
+                    url: '/User/GetUsersByGroup/' + groupId,
+                    type: 'GET',
+                    success: function (users) {
+                        updateUserTable(users);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error loading users:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Không thể tải danh sách người dùng'
+                        });
+                    }
+                });
+            }
+
+            // Hàm load tất cả user
+            function loadAllUsers() {
+                // Hiển thị trạng thái đang tải
+                $('#userTableBody').html('<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu người dùng...</td></tr>');
+
+                $.ajax({
+                    url: '/User/GetAllUsers',
+                    type: 'GET',
+                    success: function(users) {
+                        if (users && users.length > 0) {
+                            updateUserTable(users);
+                        } else {
+                            $('#userTableBody').html('<tr><td colspan="9" class="text-center">Không có người dùng nào</td></tr>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Lỗi khi tải người dùng:', error);
+                        $('#userTableBody').html('<tr><td colspan="9" class="text-center text-danger">Lỗi khi tải dữ liệu người dùng</td></tr>');
+                    }
+                });
+            }
+
+            // Hàm cập nhật bảng user
+        function updateUserTable(users) {
+            var tbody = $('table tbody');
+            tbody.empty();
+
+            if (users.length === 0) {
+                tbody.append('<tr><td colspan="9" class="text-center">Không có người dùng nào</td></tr>');
+                return;
+            }
+
+            users.forEach(function(user, index) {
+                var dateOfBirth = new Date(user.dateOfBirth);
+                var formattedDate = dateOfBirth.getDate().toString().padStart(2, '0') + '/' +
+                                   (dateOfBirth.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                                   dateOfBirth.getFullYear();
+                var row = `
+                    <tr data-id="${user.id}">
+                        <td>${index + 1}</td>
+                        <td>${user.username}</td>
+                        <td>${user.fullName}</td>
+                        <td>${formattedDate}</td>
+                        <td>${user.gender ? 'Nam' : 'Nữ'}</td>
+                        <td>${user.phoneNumber}</td>
+                        <td>${user.email}</td>
+                        <td>${user.groupName || user.groupId}</td>
+                        <td>
+                            <button class="btn btn-info btn-sm" onclick="openUserModal('DetailUser', '${user.id}', '${user.username}', '${user.fullName}', '${user.dateOfBirth}', '${user.gender}', '${user.phoneNumber}', '${user.email}', '${user.groupId}')">Detail</button>
+                            <button class="btn btn-warning btn-sm" onclick="openUserModal('EditUser', '${user.id}', '${user.username}', '${user.fullName}', '${user.dateOfBirth}', '${user.gender}', '${user.phoneNumber}', '${user.email}', '${user.groupId}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmUserDelete(event, '${user.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+            });
+
+
+        //
+        function confirmUserDelete(event, userId) {
+            Swal.fire({
+                title: 'Bạn có chắc muốn xóa người dùng này không?',
+                text: 'Dữ liệu sẽ bị mất vĩnh viễn.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Có, xóa!',
+                cancelButtonText: 'Không, hủy bỏ',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Gửi yêu cầu xóa user qua AJAX
+                    $.ajax({
+                        url: '/User/Delete/' + userId,
+                        type: 'POST',
+                        success: function(response) {
+                            console.log(response); // Kiểm tra phản hồi từ server
+                            if (response.success) {
+                                // Xóa dòng trong bảng dựa trên data-id
+                                $('tr[data-id="' + userId + '"]').remove();
+
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Đã xóa',
+                                    text: response.message,
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Lỗi',
+                                    text: response.message
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            console.log(xhr.responseText); // In lỗi chi tiết
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: 'Đã xảy ra lỗi khi xóa người dùng'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+
+
+    </script>
+}
+
+
+<style>
+
+    .jstree-clicked {
+        background-color: #f0ad4e !important;
+        color: white !important;
+        border-radius: 3px;
+    }
+
+    /* Style cho bảng user */
+    .table {
+        width: 100%;
+        margin-bottom: 1rem;
+        color: #212529;
+        border-collapse: collapse;
+    }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            vertical-align: top;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .table thead th {
+            vertical-align: bottom;
+            border-bottom: 2px solid #dee2e6;
+            background-color: #f8f9fa;
+        }
+
+        .table tbody + tbody {
+            border-top: 2px solid #dee2e6;
+        }
+
+    /* Style cho nút */
+    .btn {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    .btn-warning {
+        color: #212529;
+        background-color: #ffc107;
+        border-color: #ffc107;
+    }
+
+    .btn-danger {
+        color: #fff;
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    /* CSS cho context menu - Phiên bản đẹp và gọn gàng */
+    .vakata-context {
+        min-width: 180px;
+        margin-top: -123px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        padding: 6px 0;
+        z-index: 10000;
+        width: 10px;
+        margin-left: 30px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .vakata-context li {
+       margin: 0;
+    }
+
+            .vakata-context li a {
+                display: flex;
+                align-items: center;
+                padding: 6px 14px;
+                color: #374151;
+                font-size: 14px;
+                text-decoration: none;
+                transition: all 0.2s ease;
+            }
+
+                .vakata-context li a:hover {
+                    background-color: #f3f4f6;
+                    color: #111827;
+                }
+
+                .vakata-context li a i {
+                    margin-right: 10px;
+                    width: 16px;
+                    text-align: center;
+                    color: #6b7280;
+                }
+
+                .vakata-context li a:hover i {
+                    color: #4b5563;
+                }
+
+            /* Màu riêng cho từng action */
+            .vakata-context li .edit-action:hover {
+                background-color: #f0fdf4;
+                color: #166534;
+            }
+
+                .vakata-context li .edit-action:hover i {
+                    color: #16a34a;
+                }
+
+            .vakata-context li .detail-action:hover {
+                background-color: #eff6ff;
+                color: #1e40af;
+            }
+
+                .vakata-context li .detail-action:hover i {
+                    color: #3b82f6;
+                }
+
+            .vakata-context li .delete-action:hover {
+                background-color: #fef2f2;
+                color: #991b1b;
+            }
+
+                .vakata-context li .delete-action:hover i {
+                    color: #ef4444;
+                }
+
+            /* Tách biệt các mục bằng đường kẻ mỏng */
+            .vakata-context li + li {
+                border-top: 1px solid #f3f4f6;
+            }
+
+        .vakata-context ul,
+        .vakata-context li {
+            list-style: none !important;
+            background-image: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+</style>
