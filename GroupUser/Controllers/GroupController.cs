@@ -9,18 +9,18 @@ namespace GroupUser.Controllers
 
     public class GroupController(IGroupService _IGroupService, ILogger<GroupController> _logger, ModelDbContext _db) : Controller
     {
+
+
         public async Task<IActionResult> Index()
         {
             var groups = await _IGroupService.GetAll();
 
             ViewBag.group = await _IGroupService.GetAll();
 
-            // Build a tree structure from the list of groups
             var groupTree = BuildGroupTree(groups);
 
             return View(groupTree);
         }
-
 
 
         [HttpGet]
@@ -65,8 +65,6 @@ namespace GroupUser.Controllers
         }
 
 
-
-
         private List<Group> BuildGroupTree(List<Group> groups)
         {
             var groupLookup = groups.ToLookup(g => g.ParentGroupId);
@@ -93,12 +91,6 @@ namespace GroupUser.Controllers
         }
 
 
-        public async Task<IActionResult> CreateGroup()
-        {
-            return View();
-        }
-
-
         [HttpPost]  
         public async Task<IActionResult> CreateGroup(Group group)
         {
@@ -107,15 +99,6 @@ namespace GroupUser.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> EditGroup(int id)
-        {
-            var group = await _IGroupService.GetById(id);
-            if (group == null)
-            {
-                return NotFound();
-            }
-            return View(group);
-        }
 
         [HttpPost]
         public async Task<IActionResult> EditGroup(Group group)
@@ -124,16 +107,6 @@ namespace GroupUser.Controllers
             _logger.LogInformation($"Updated group: {updatedGroup.GroupName} (ID: {updatedGroup.Id})");
             return RedirectToAction("Index");
 
-        }
-
-        public async Task<IActionResult> Details(int id)
-        {
-            var group = await _IGroupService.GetById(id);
-            if (group == null)
-            {
-                return NotFound();
-            }
-            return View(group);
         }
 
         [HttpPost]

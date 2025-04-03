@@ -9,16 +9,6 @@ namespace GroupUser.Controllers
     public class UserController(IUserService _IUserService, IGroupService _IGroupService, ILogger<GroupController> _logger, ModelDbContext _db) : Controller
     {
 
-        public async Task<IActionResult> EditUser(int id)
-        {
-            var user = _db.Users.Include(u => u.Group).FirstOrDefault(u => u.Id == id);
-            if (user == null) return NotFound();
-
-            ViewBag.UserGroupId = user.GroupId; // Truyền GroupId của User vào ViewBag
-            var groups = _db.Groups.ToList();
-            return View(user);
-        }
-
 
 
         [HttpPost]
@@ -55,61 +45,17 @@ namespace GroupUser.Controllers
             }
         }
 
-
-        public async Task<User> GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            return await _db.Users
-                .Include(u => u.Group)
-                .FirstOrDefaultAsync(u => u.Id == id);
-        }
+            var user = await _IUserService.GetById(id);
 
-
-        public async Task<IActionResult> Details(int id)
-        {
-            var UserId = await _IUserService.GetById(id);
-            if (UserId == null)
+            if (user == null)
             {
-                return NotFound();
+                return NotFound(); 
             }
-
-            ViewBag.group = await _db.Groups
-                .Include(x => x.ChildGroups)
-                .Include(x => x.ParentGroup)
-                .ToListAsync();
-            return View(UserId);
+            return View(user);
         }
 
-
-
-        [HttpGet]
-        public IActionResult GetUsersByParentGroup(int id)
-        {
-            // Lấy tất cả các nhóm con của nhóm hiện tại
-            var childGroupIds = _db.Groups
-                .Where(g => g.ParentGroupId == id)
-                .Select(g => g.Id)
-                .ToList();
-
-            // Thêm cả nhóm hiện tại vào danh sách
-            childGroupIds.Add(id);
-
-            var users = _db.Users
-                .Where(u => childGroupIds.Contains(u.GroupId.Value))
-                .Select(u => new {
-                    id = u.Id,
-                    username = u.Username,
-                    fullName = u.FullName,
-                    dateOfBirth = u.DateOfBirth,
-                    gender = u.Gender,
-                    phoneNumber = u.PhoneNumber,
-                    email = u.Email,
-                    groupId = u.GroupId,
-                    groupName = u.Group.GroupName
-                })
-                .ToList();
-
-            return Json(users);
-        }
 
         [HttpGet]
         public IActionResult GetUsersByGroup(int id)
@@ -169,12 +115,6 @@ namespace GroupUser.Controllers
         }
 
 
-        public async Task<IActionResult> CreateGroup()
-        {
-            return View();
-        }
-
-
         [HttpPost]
         public async Task<IActionResult> CreateUser(User user)
         {
@@ -208,8 +148,6 @@ namespace GroupUser.Controllers
                 return Json(new { success = false, message = "Error occurred while creating user" });
             }
         }
-
-
 
 
 
