@@ -10,6 +10,50 @@ namespace GroupUser.Controllers
     {
 
 
+        [HttpGet]
+        public async Task<IActionResult> GetUsersByGroup(int id)
+        {
+            var users = await _IUserService.GetUsersByGroup(id);
+            return Json(users);
+        }
+
+
+        [HttpGet]
+        public  IActionResult GetAllUsers()
+        {
+            try
+            {
+                var users = _db.Users
+                    .Include(u => u.Group)
+                    .Select(u => new
+                    {
+                        id = u.Id,
+                        username = u.Username,
+                        fullName = u.FullName,
+                        dateOfBirth = u.DateOfBirth,
+                        gender = u.Gender,
+                        phoneNumber = u.PhoneNumber,
+                        email = u.Email,
+                        groupId = u.Group != null ? u.Group.GroupName : "Không có nhóm"
+                    })
+                    .ToList();
+
+                return Json(users);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách người dùng");
+                return StatusCode(500, "Đã xảy ra lỗi khi lấy danh sách người dùng");
+            }
+        }
+
+
+        public async Task<IActionResult> Index()
+        {
+            var GetGroup = await _IUserService.GetAll();
+            _logger.LogInformation($"get User:{GetGroup}");
+            return View(GetGroup);
+        }
 
         [HttpPost]
         public async Task<IActionResult> EditUser([FromForm] User user)
@@ -51,67 +95,9 @@ namespace GroupUser.Controllers
 
             if (user == null)
             {
-                return NotFound(); 
+                return NotFound();
             }
             return View(user);
-        }
-
-
-        [HttpGet]
-        public IActionResult GetUsersByGroup(int id)
-        {
-            var users = _db.Users
-                .Where(u => u.GroupId == id)
-                .Select(u => new {
-                    id = u.Id,
-                    username = u.Username,
-                    fullName = u.FullName,
-                    dateOfBirth = u.DateOfBirth,
-                    gender = u.Gender,
-                    phoneNumber = u.PhoneNumber,
-                    email = u.Email,
-                    groupId = u.GroupId
-                })
-                .ToList();
-
-            return Json(users);
-        }
-
-        [HttpGet]
-        public IActionResult GetAllUsers()
-        {
-            try
-            {
-                var users = _db.Users
-                    .Include(u => u.Group)
-                    .Select(u => new
-                    {
-                        id = u.Id,
-                        username = u.Username,
-                        fullName = u.FullName,
-                        dateOfBirth = u.DateOfBirth,
-                        gender = u.Gender,
-                        phoneNumber = u.PhoneNumber,
-                        email = u.Email,
-                        groupId = u.Group != null ? u.Group.GroupName : "Không có nhóm"
-                    })
-                    .ToList();
-
-                return Json(users);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi lấy danh sách người dùng");
-                return StatusCode(500, "Đã xảy ra lỗi khi lấy danh sách người dùng");
-            }
-        }
-
-
-        public async Task<IActionResult> Index()
-        {
-            var GetGroup = await _IUserService.GetAll();
-            _logger.LogInformation($"get User:{GetGroup}");
-            return View(GetGroup);
         }
 
 
@@ -148,7 +134,6 @@ namespace GroupUser.Controllers
                 return Json(new { success = false, message = "Error occurred while creating user" });
             }
         }
-
 
 
         [HttpPost]

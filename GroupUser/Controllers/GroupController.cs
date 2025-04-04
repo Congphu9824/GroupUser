@@ -10,7 +10,6 @@ namespace GroupUser.Controllers
     public class GroupController(IGroupService _IGroupService, ILogger<GroupController> _logger, ModelDbContext _db) : Controller
     {
 
-
         public async Task<IActionResult> Index()
         {
             var groups = await _IGroupService.GetAll();
@@ -23,45 +22,42 @@ namespace GroupUser.Controllers
         }
 
 
-        [HttpGet]
-        public IActionResult GetUsersByGroup(int id)
+        [HttpPost]  
+        public async Task<IActionResult> CreateGroup(Group group)
         {
-            var users = _db.Users
-                .Where(u => u.GroupId == id)
-                .Select(u => new {
-                    id = u.Id,
-                    username = u.Username,
-                    fullName = u.FullName,
-                    dateOfBirth = u.DateOfBirth,
-                    gender = u.Gender,
-                    phoneNumber = u.PhoneNumber,
-                    email = u.Email,
-                    groupId = u.GroupId
-                })
-                .ToList();
+            var CreateGroup = await _IGroupService.AddGroup(group);
+            TempData["SuccessMessage"] = "Thêm Group thành công";
 
-            return Json(users);
+
+            _logger.LogInformation($"Add new Group:{CreateGroup}");
+            return RedirectToAction("Index");
         }
 
-        [HttpGet]
-        public IActionResult GetAllUsers()
-        {
-            var users = _db.Users
-                .Include(u => u.Group)
-                .Select(u => new {
-                    id = u.Id,
-                    username = u.Username,
-                    fullName = u.FullName,
-                    dateOfBirth = u.DateOfBirth,
-                    gender = u.Gender,
-                    phoneNumber = u.PhoneNumber,
-                    email = u.Email,
-                    groupId = u.GroupId,
-                    groupName = u.Group.GroupName
-                })
-                .ToList();
 
-            return Json(users);
+        [HttpPost]
+        public async Task<IActionResult> EditGroup(Group group)
+        {
+            var updatedGroup = await _IGroupService.Update(group);
+            TempData["SuccessMessage"] = "Cập nhật Group thành công";
+
+            _logger.LogInformation($"Updated group: {updatedGroup.GroupName} (ID: {updatedGroup.Id})");
+            return RedirectToAction("Index");
+
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteGroup(int id)
+        {
+            var result = await _IGroupService.DeleteGroup(id);
+            if (!result)
+            {
+                return NotFound();
+            }
+            TempData["SuccessMessage"] = "Xóa Group thành công";
+            _logger.LogInformation($"Deleted group ID: {id}");
+            return RedirectToAction(nameof(Index));
         }
 
 
@@ -83,43 +79,12 @@ namespace GroupUser.Controllers
                 }).ToList();
         }
 
+
         [HttpGet]
         public async Task<IActionResult> GetGroupTree()
         {
             var groupTree = await _IGroupService.GetGroupTree();
             return Json(groupTree);
-        }
-
-
-        [HttpPost]  
-        public async Task<IActionResult> CreateGroup(Group group)
-        {
-            var CreateGroup = await _IGroupService.AddGroup(group);
-            _logger.LogInformation($"Add new Group:{CreateGroup}");
-            return RedirectToAction("Index");
-        }
-
-
-        [HttpPost]
-        public async Task<IActionResult> EditGroup(Group group)
-        {
-            var updatedGroup = await _IGroupService.Update(group);
-            _logger.LogInformation($"Updated group: {updatedGroup.GroupName} (ID: {updatedGroup.Id})");
-            return RedirectToAction("Index");
-
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> DeleteGroup(int id)
-        {
-            var result = await _IGroupService.DeleteGroup(id);
-            if (!result)
-            {
-                return NotFound();
-            }
-
-            _logger.LogInformation($"Deleted group ID: {id}");
-            return RedirectToAction(nameof(Index));
         }
     }
 }

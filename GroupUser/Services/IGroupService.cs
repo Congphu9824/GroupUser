@@ -13,35 +13,17 @@ namespace GroupUser.Services
         Task<Group> GetById(int id);
         Task<bool> DeleteGroup(int id);
         Task<List<object>> GetGroupTree();
-        Task<List<UserDto>> GetUsersByGroup(int groupId);
+        bool IsGroupNameDuplicate(string groupName);
+
 
     }
 
     public class GroupService(ModelDbContext _db) : IGroupService
     {
-
-        public async Task<List<UserDto>> GetUsersByGroup(int groupId)
+        public bool IsGroupNameDuplicate(string groupName)
         {
-            var users = await _db.Users
-                .Where(u => u.GroupId == groupId)
-                .Select(u => new UserDto
-                {
-                    Id = u.Id,
-                    Username = u.Username,
-                    FullName = u.FullName,
-                    DateOfBirth = u.DateOfBirth.ToString("dd/MM/yyyy"),
-                    Gender = u.Gender ? "Male" : "Female",
-                    PhoneNumber = u.PhoneNumber,
-                    Email = u.Email,
-                    GroupId = u.GroupId
-                })
-                .ToListAsync();
-
-            return users;
+            return _db.Groups.Any(g => g.GroupName == groupName);
         }
-
-
-
 
         public async Task<Group> AddGroup(Group group)
         {
@@ -66,6 +48,7 @@ namespace GroupUser.Services
                                 .Include(x => x.ChildGroups)
                                 .Include(x => x.ParentGroup)
                                 .Include(x => x.Users)
+                                .AsNoTracking()
                                 .ToListAsync();
         }
 
@@ -101,16 +84,22 @@ namespace GroupUser.Services
 
         public async Task<bool> DeleteGroup(int id)
         {
-            var Groups = await _db.Groups.Include(x => x.ChildGroups).FirstOrDefaultAsync(x => x.Id == id);
-            if (Groups is null)
+            var group = await _db.Groups
+                .Include(x => x.ChildGroups)  // Include child groups
+                .Include(x => x.Users)       
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (group == null)
             {
                 return false;
             }
 
-            // delete child
-            _db.Groups.RemoveRange(Groups.ChildGroups);
+            _db.Groups.RemoveRange(group.ChildGroups);
 
-            _db.Groups.Remove(Groups);
+            _db.Users.RemoveRange(group.Users);
+
+            _db.Groups.Remove(group);
+
             await _db.SaveChangesAsync();
             return true;
         }

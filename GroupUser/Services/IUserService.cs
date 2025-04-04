@@ -1,4 +1,5 @@
 ﻿using Data.Context;
+using Data.DTO;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,8 @@ namespace GroupUser.Services
         Task<User> UpdateUser(User user);
         Task<User> GetById(int id);
         Task<bool> DeleteUser(int id);
+        Task<List<UserDto>> GetUsersByGroup(int id);
+
     }
     public class UserService(ModelDbContext _db) : IUserService
     {
@@ -79,6 +82,24 @@ namespace GroupUser.Services
             _db.Users.Update(existingUser);
             await _db.SaveChangesAsync();
             return existingUser;
+        }
+
+        public async Task<List<UserDto>> GetUsersByGroup(int id)
+        {
+            return _db.Users
+                .Where(u => u.GroupId == id)
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    FullName = u.FullName,
+                    DateOfBirth = u.DateOfBirth,
+                    Gender = u.Gender,
+                    PhoneNumber = u.PhoneNumber,
+                    Email = u.Email,
+                    GroupId = u.GroupId
+                })
+                .ToList();
         }
     }
 }
